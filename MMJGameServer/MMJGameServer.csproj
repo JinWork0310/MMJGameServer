@@ -1,0 +1,62 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <ApplicationIcon />
+    <Win32Resource />
+    <StartupObject />
+    <FileUpgradeFlags>40</FileUpgradeFlags>
+    <UpgradeBackupLocation>C:\WorkSpace\VSProjects\MMJGameServer\Backup\MMJGameServer\</UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="game_process.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\source\game\DataStructures.cs" />
+    <Compile Include="..\source\game\data_shots.cs" />
+    <Compile Include="..\source\game\data_object.cs" />
+    <Compile Include="..\source\game\data_player.cs" />
+    <Compile Include="..\source\game\game_server.cs" />
+    <Compile Include="..\source\game\game_process.cs" />
+    <Compile Include="..\source\game\base_libs.cs" />
+    <Compile Include="..\libmrs\Monobit\mrs\Mrs.cs" />
+    <Compile Include="..\libmrs\Monobit\mrs\MrsBuffer.cs" />
+    <Compile Include="..\libmrs\Monobit\mrs\MrsDateTime.cs" />
+    <Compile Include="..\libmrs\Monobit\mrs\MrsTime.cs" />
+    <Compile Include="..\libmrs\Monobit\mrs\MrsUtility.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System">
+      <HintPath>System</HintPath>
+    </Reference>
+    <Reference Include="System.Data">
+      <HintPath>System.Data</HintPath>
+    </Reference>
+    <Reference Include="System.Xml">
+      <HintPath>System.Xml</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="DataSet1.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>DataSet1.xsd</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="DataSet1.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>DataSet1.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy C:\mrs_2.0.0\mrs\library\mrs\windows\enet_uv_openssl_1.1.1\2017\MT\x64\$(ConfigurationName) $(OutDir)&#xD;&#xA;" />
+  </Target>
+</Project>

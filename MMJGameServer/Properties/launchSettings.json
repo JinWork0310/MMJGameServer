@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MMJGameServer": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}
