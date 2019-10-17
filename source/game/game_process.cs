@@ -57,27 +57,29 @@ namespace Game_Process
         // ゲーム処理の初期化
         public void Initialize()
         {
+
             // スポーンエリアの抽選
-            for (int i = 0; i < MAXPLAYER; i++)
-            {
-                if (profile[i].player_id != -1)
-                {
-                    while (true)
-                    {
-                        spawnarea[i] = rSeed.Next(MAXPLAYER);
-                        bool double_check = false;
-                        for(int j = 0; j < i; j++)
-                        {
-                            if (spawnarea[j] == spawnarea[i]) double_check = true;
-                        }
-                        if (!double_check) break;
-                    }
-                }
-                else
-                {
-                    spawnarea[i] = -1;
-                }
-            }
+            //for (int i = 0; i < MAXPLAYER; i++)
+            //{
+            //    if (profile[i].player_id != -1)
+            //    {
+            //        while (true)
+            //        {
+            //            spawnarea[i] = rSeed.Next(MAXPLAYER);
+            //            bool double_check = false;
+            //            for(int j = 0; j < i; j++)
+            //            {
+            //                if (spawnarea[j] == spawnarea[i]) double_check = true;
+            //            }
+            //            if (!double_check) break;
+            //        }
+            //    }
+            //    else
+            //    {
+            //        spawnarea[i] = -1;
+            //    }
+            //}
+            spawnarea = new int[4] { 0,2,1,3};
 
 
             shotIndex = 0;
@@ -157,7 +159,8 @@ namespace Game_Process
         {
             unsafe
             {
-                profile[_num].name = System.Text.Encoding.UTF8.GetString(_name);
+                //profile[_num].name = System.Text.Encoding.UTF8.GetString(_name);
+
 
                 profile[_num].player_id = _num;
 
@@ -182,7 +185,7 @@ namespace Game_Process
         public IntPtr getStartData(int _sumplayers)
         {
             starting.spawnid = spawnarea;
-            starting.sumplayer = (uint)_sumplayers;
+            starting.sumplayer = 4;
             
             IntPtr data = Marshal.AllocHGlobal(Marshal.SizeOf(starting));
             Marshal.StructureToPtr(starting, data, false);

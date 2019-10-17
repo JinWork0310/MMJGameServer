@@ -451,9 +451,9 @@ namespace game_server
                         {
                             if (connection == m_nowConnect[i]) break;
                         }
-                        byte[] recvName = new byte[payload_len+1];
-                        recvName = System.BitConverter.GetBytes(_payload.ToInt32());
-                        Marshal.Copy(_payload, recvName, 0, (int)payload_len);
+                        byte[] recvName = new byte[payload_len + 1];
+                        //recvName = System.BitConverter.GetBytes(_payload.ToInt32());
+                        //Marshal.Copy(_payload, recvName, 0, (int)payload_len);
                         IntPtr p_data = m_gameProc.setProfile(recvName, i);
                         for (int j = 0; j < m_MaxPlayer; j++)
                         {
@@ -470,7 +470,7 @@ namespace game_server
                             if (m_nowConnect != null) nowplayers++;
                         }
                         g_payloadType = 0x03;
-                        
+                        MRS_LOG_DEBUG("received 0x03 data");
                         // ゲーム処理初期化
                         m_gameProc.Initialize();
 
@@ -481,7 +481,7 @@ namespace game_server
                         {
                             mrs_write_record(m_nowConnect[i], options, g_payloadType, sendptr, (uint)m_gameProc.getStartDataSize());
                         }
-
+                        MRS_LOG_DEBUG("sent start data");
                         Marshal.FreeHGlobal(sendptr);
                         g_gameon = true;
                     }

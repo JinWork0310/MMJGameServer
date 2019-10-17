@@ -1,12 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace DataStructures
 {
     public struct S_DataProfile
     {
         public int player_id;
-        public string name;
         public int spawn_id;
     }
 
@@ -28,8 +28,10 @@ namespace DataStructures
 
     public struct S_StartingData
     {
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst = 4)]
         public int[] spawnid;
         public uint sumplayer;
+
     }
-    
+
 }
