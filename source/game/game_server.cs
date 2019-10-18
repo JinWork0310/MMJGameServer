@@ -5,6 +5,7 @@ using MrsLibs.Server;
 using MrsLibs.Parser;
 using MrsLibs.Signal;
 using Game_Process;
+using MMJGameServer;
 
 
 namespace game_server
@@ -186,7 +187,6 @@ namespace game_server
         /// ゲーム稼働フラグ
         /// </summary>
         private static Boolean g_gameon = false;
-
 
         private static ushort g_payloadType;
 
@@ -388,7 +388,7 @@ namespace game_server
                 }
                 if (m_nowConnect[i] != (IntPtr)0) nowplayer++;
             }
-            if (nowplayer < 2) g_gameon = false;
+            if (nowplayer < 2) { g_gameon = false; m_gameProc.CloseGame(); }
         }
 
 		/// <summary>

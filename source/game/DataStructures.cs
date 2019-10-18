@@ -4,6 +4,15 @@ using System.Runtime.InteropServices;
 
 namespace DataStructures
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct S_Header
+    {
+        public int id;
+        public double time;
+    }
+
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct S_DataProfile
     {
         //[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 20)]
@@ -18,15 +27,12 @@ namespace DataStructures
         public uint id;
         public float x, y;
         public float angle;
-        public int bullets;
-        public bool died;
     }
 
     public struct S_DataShots
     {
         public float x, y;
         public float angle;
-        public bool died;
         public int id;
     }
 

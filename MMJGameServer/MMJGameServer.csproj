@@ -22,9 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\source\game\DataStructures.cs" />
-    <Compile Include="..\source\game\data_shots.cs" />
-    <Compile Include="..\source\game\data_object.cs" />
-    <Compile Include="..\source\game\data_player.cs" />
     <Compile Include="..\source\game\game_server.cs" />
     <Compile Include="..\source\game\game_process.cs" />
     <Compile Include="..\source\game\base_libs.cs" />
