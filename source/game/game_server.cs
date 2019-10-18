@@ -135,7 +135,7 @@ namespace game_server
         /// <summary>
         /// 最大プレイヤー数
         /// </summary>
-        private static UInt32 m_MaxPlayer = 2;
+        private static UInt32 m_MaxPlayer = 4;
 
         /// <summary>
         /// スリープ時間
@@ -347,6 +347,7 @@ namespace game_server
 		/// <param name="connection"></param>
 		private static void OnConnect(MrsConnection connection)
         {
+            if (g_gameon) { mrs_close(connection); return; }
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (m_nowConnect[i].ToInt32() == 0)
@@ -376,6 +377,7 @@ namespace game_server
         /// <param name="connection_data"></param>
         private static void OnDisconnect(MrsConnection connection, IntPtr connection_data)
         {
+            int nowplayer = 0;
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (connection == m_nowConnect[i])
@@ -383,9 +385,10 @@ namespace game_server
                     MRS_LOG_DEBUG("OnDisconnect {0} : {1} local_mrs_version=0x{2:X} remote_mrs_version=0x{3:X}",
                         ConnectionTypeToString(connection),m_nowConnect[i].ToInt32(), mrs_get_version(MRS_VERSION_KEY), mrs_connection_get_remote_version(connection, MRS_VERSION_KEY));
                     m_nowConnect[i] = IntPtr.Zero;
-                    g_gameon = false;
                 }
+                if (m_nowConnect[i] != (IntPtr)0) nowplayer++;
             }
+            if (nowplayer < 2) g_gameon = false;
         }
 
 		/// <summary>
@@ -451,14 +454,22 @@ namespace game_server
                         {
                             if (connection == m_nowConnect[i]) break;
                         }
-                        byte[] recvName = new byte[payload_len + 1];
-                        //recvName = System.BitConverter.GetBytes(_payload.ToInt32());
-                        //Marshal.Copy(_payload, recvName, 0, (int)payload_len);
-                        IntPtr p_data = m_gameProc.setProfile(recvName, i);
+                        
+                        IntPtr p_data = m_gameProc.setProfile(_payload, i);
                         for (int j = 0; j < m_MaxPlayer; j++)
                         {
-                            if (j != i) mrs_write_record(m_nowConnect[j], options, g_payloadType, p_data, (uint)m_gameProc.getProfileSize(i));
+                            if (j == i)
+                            {
+                                g_payloadType = 0x01;
+                                mrs_write_record(m_nowConnect[j], options, g_payloadType, p_data, (uint)Marshal.SizeOf(m_gameProc.getProfile(i)));
+                            }
+                            if (j != i && m_nowConnect[j] != (IntPtr)0)
+                            {
+                                g_payloadType = 0x02;
+                                mrs_write_record(m_nowConnect[j], options, g_payloadType, p_data, (uint)m_gameProc.getProfileSize(i));
+                            }
                         }
+                        Marshal.FreeHGlobal(p_data);
                     }
                     break;
 
@@ -467,7 +478,7 @@ namespace game_server
                         int nowplayers = 0;
                         for(int i = 0; i < m_MaxPlayer; i++)
                         {
-                            if (m_nowConnect != null) nowplayers++;
+                            if (m_nowConnect[i] != (IntPtr)0) nowplayers++;
                         }
                         g_payloadType = 0x03;
                         MRS_LOG_DEBUG("received 0x03 data");
@@ -477,7 +488,7 @@ namespace game_server
                         // ゲームスタートに必要なデータの作成・送信
                         IntPtr sendptr = m_gameProc.getStartData(nowplayers);
 
-                        for(int i = 0; i < m_MaxPlayer; i++)
+                        for(int i = 0; i < nowplayers; i++)
                         {
                             mrs_write_record(m_nowConnect[i], options, g_payloadType, sendptr, (uint)m_gameProc.getStartDataSize());
                         }
@@ -531,8 +542,6 @@ namespace game_server
                 default:
                     break;
             }
-
-            _payload = IntPtr.Zero;
         }
 
         /// <summary>
