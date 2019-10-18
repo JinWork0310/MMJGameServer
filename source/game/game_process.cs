@@ -59,27 +59,21 @@ namespace Game_Process
         {
 
             // スポーンエリアの抽選
-            //for (int i = 0; i < MAXPLAYER; i++)
-            //{
-            //    if (profile[i].player_id != -1)
-            //    {
-            //        while (true)
-            //        {
-            //            spawnarea[i] = rSeed.Next(MAXPLAYER);
-            //            bool double_check = false;
-            //            for(int j = 0; j < i; j++)
-            //            {
-            //                if (spawnarea[j] == spawnarea[i]) double_check = true;
-            //            }
-            //            if (!double_check) break;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        spawnarea[i] = -1;
-            //    }
-            //}
-            spawnarea = new int[4] { 0,2,1,3};
+            for (int i = 0; i < MAXPLAYER; i++)
+            {
+                while (true)
+                {
+                    spawnarea[i] = rSeed.Next(MAXPLAYER);
+                    bool double_check = false;
+                    for (int j = 0; j < i; j++)
+                    {
+                        if (spawnarea[j] == spawnarea[i]) double_check = true;
+                    }
+                    if (!double_check) break;
+                }
+            }
+            //spawnarea = new int[4] { 0,1,2,3};
+            Console.WriteLine("SPAWN AREA : {0}", String.Join(", ", spawnarea));
 
 
             shotIndex = 0;
@@ -114,7 +108,7 @@ namespace Game_Process
             Console.WriteLine(string.Format("setPlayerData : {0}",_data));
 
             S_DataPlayer getdata = (S_DataPlayer)Marshal.PtrToStructure(_data,typeof(S_DataPlayer));
-
+            player[_num].id = (uint)_num;
             player[_num].x = getdata.x;
             player[_num].y = getdata.y;
 
@@ -155,20 +149,22 @@ namespace Game_Process
         }
 
         // プレイヤー情報の格納
-        public IntPtr setProfile(byte[] _name, int _num)
+        public IntPtr setProfile(IntPtr _data, int _num)
         {
-            unsafe
-            {
-                //profile[_num].name = System.Text.Encoding.UTF8.GetString(_name);
+            //S_DataProfile getdata = (S_DataProfile)Marshal.PtrToStructure(_data, typeof(S_DataProfile));
 
+            //getdata.name = Marshal.PtrToStringUTF8(_data, 20);
+            //byte[] name = System.Text.Encoding.UTF8.GetBytes(getdata.name);
 
-                profile[_num].player_id = _num;
+            //profile[_num].name = getdata.name;
+            profile[_num].player_id = _num;
 
-                IntPtr p_data = Marshal.AllocHGlobal(Marshal.SizeOf(profile[_num]));
-                Marshal.StructureToPtr(profile[_num], p_data, false);
+            Mrs.MRS_LOG_DEBUG("setProfile ID:{0}", profile[_num].player_id);
 
-                return p_data;
-            }
+            IntPtr p_data = Marshal.AllocHGlobal(Marshal.SizeOf(profile[_num]));
+            Marshal.StructureToPtr(profile[_num], p_data, false);
+
+            return p_data;
         }
 
 
@@ -185,7 +181,9 @@ namespace Game_Process
         public IntPtr getStartData(int _sumplayers)
         {
             starting.spawnid = spawnarea;
-            starting.sumplayer = 4;
+            starting.sumplayer = (uint)_sumplayers;
+
+            Mrs.MRS_LOG_DEBUG("getStartData Spawn:{0} countPlayer:{1}", String.Join(", ",starting.spawnid), starting.sumplayer);
             
             IntPtr data = Marshal.AllocHGlobal(Marshal.SizeOf(starting));
             Marshal.StructureToPtr(starting, data, false);
