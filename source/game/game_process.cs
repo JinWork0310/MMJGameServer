@@ -105,7 +105,7 @@ namespace Game_Process
 
         public void setPlayerData(int _num, IntPtr _data)
         {
-            Console.WriteLine(string.Format("setPlayerData : {0}",_data));
+            //Console.WriteLine(string.Format("setPlayerData : {0}",_data));
 
             S_DataPlayer getdata = (S_DataPlayer)Marshal.PtrToStructure(_data,typeof(S_DataPlayer));
             player[_num].id = (uint)_num;
@@ -115,14 +115,14 @@ namespace Game_Process
             player[_num].angle = getdata.angle;
             player[_num].died = getdata.died;
 
-            Console.WriteLine("Successed pos_x:{0} pos_y:{1} look:{2} died:{3}",
-                player[_num].x, player[_num].y, player[_num].angle, player[_num].died);
+            Console.WriteLine("Successed PlayerNumber: {0} pos_x:{1} pos_y:{2} look:{3}",
+                _num, player[_num].x, player[_num].y, player[_num].angle);
 
         }
 
         public void setShotData(IntPtr _data)
         {
-            Console.WriteLine(string.Format("setShotData : {0}", _data)); Console.WriteLine(string.Format("setPlayerData : {0}", _data));
+            //Console.WriteLine(string.Format("setShotData : {0}", _data)); Console.WriteLine(string.Format("setPlayerData : {0}", _data));
 
             S_DataShots getdata = (S_DataShots)Marshal.PtrToStructure(_data, typeof(S_DataShots));
 

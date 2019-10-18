@@ -347,6 +347,7 @@ namespace game_server
 		/// <param name="connection"></param>
 		private static void OnConnect(MrsConnection connection)
         {
+            if (g_gameon) { mrs_close(connection); return; }
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (m_nowConnect[i].ToInt32() == 0)
@@ -376,6 +377,7 @@ namespace game_server
         /// <param name="connection_data"></param>
         private static void OnDisconnect(MrsConnection connection, IntPtr connection_data)
         {
+            int nowplayer = 0;
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (connection == m_nowConnect[i])
@@ -383,9 +385,10 @@ namespace game_server
                     MRS_LOG_DEBUG("OnDisconnect {0} : {1} local_mrs_version=0x{2:X} remote_mrs_version=0x{3:X}",
                         ConnectionTypeToString(connection),m_nowConnect[i].ToInt32(), mrs_get_version(MRS_VERSION_KEY), mrs_connection_get_remote_version(connection, MRS_VERSION_KEY));
                     m_nowConnect[i] = IntPtr.Zero;
-                    g_gameon = false;
                 }
+                if (m_nowConnect[i] != (IntPtr)0) nowplayer++;
             }
+            if (nowplayer < 2) g_gameon = false;
         }
 
 		/// <summary>
@@ -475,7 +478,7 @@ namespace game_server
                         int nowplayers = 0;
                         for(int i = 0; i < m_MaxPlayer; i++)
                         {
-                            if (m_nowConnect != null) nowplayers++;
+                            if (m_nowConnect[i] != (IntPtr)0) nowplayers++;
                         }
                         g_payloadType = 0x03;
                         MRS_LOG_DEBUG("received 0x03 data");
