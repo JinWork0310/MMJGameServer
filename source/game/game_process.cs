@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using DataStructures;
 using System.Runtime.InteropServices;
+using MMJGameServer;
 
 namespace Game_Process
 {
@@ -32,6 +33,8 @@ namespace Game_Process
 
         int[] spawnarea;
 
+        // クラスの追加
+        BattleSceneTime btl_timer;
 
         /// <summary>
         /// コンストラクタ
@@ -79,6 +82,9 @@ namespace Game_Process
             shotIndex = 0;
 
             countFlame = 0;
+
+            btl_timer = new BattleSceneTime();
+
             Console.WriteLine(" INIT GAME! ");
         }
 
@@ -100,7 +106,7 @@ namespace Game_Process
         }
         public void CloseGame()
         {
-            
+            btl_timer = null;
         }
 
         public void setPlayerData(int _num, IntPtr _data)
@@ -111,10 +117,7 @@ namespace Game_Process
             player[_num].id = (uint)_num;
             player[_num].x = getdata.x;
             player[_num].y = getdata.y;
-
-            player[_num].angle = getdata.angle;
-            player[_num].died = getdata.died;
-
+            
             Console.WriteLine("Successed PlayerNumber: {0} pos_x:{1} pos_y:{2} look:{3}",
                 _num, player[_num].x, player[_num].y, player[_num].angle);
 
@@ -131,7 +134,6 @@ namespace Game_Process
             shot[shotIndex].y = getdata.y;
 
             shot[shotIndex].angle = getdata.angle;
-            shot[shotIndex].died = getdata.died;
             shot[shotIndex].id = shotIndex;
 
             Console.WriteLine("Successed pos_x:{0} pos_y:{1} angle:{2} ID:{3}",
