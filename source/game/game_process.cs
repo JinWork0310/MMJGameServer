@@ -34,7 +34,7 @@ namespace Game_Process
         int[] spawnarea;
 
         // クラスの追加
-        BattleSceneTime btl_timer;
+        Timer timer;
 
         /// <summary>
         /// コンストラクタ
@@ -83,7 +83,7 @@ namespace Game_Process
 
             countFlame = 0;
 
-            btl_timer = new BattleSceneTime();
+            timer = new Timer();
 
             Console.WriteLine(" INIT GAME! ");
         }
@@ -106,7 +106,7 @@ namespace Game_Process
         }
         public void CloseGame()
         {
-            btl_timer = null;
+            timer = null;
         }
 
         public void setPlayerData(int _num, IntPtr _data)
@@ -117,6 +117,7 @@ namespace Game_Process
             player[_num].id = (uint)_num;
             player[_num].x = getdata.x;
             player[_num].y = getdata.y;
+            player[_num].dead = getdata.dead;
             
             Console.WriteLine("Successed PlayerNumber: {0} pos_x:{1} pos_y:{2} look:{3}",
                 _num, player[_num].x, player[_num].y, player[_num].angle);
@@ -193,6 +194,19 @@ namespace Game_Process
             return data;
         }
 
+        public IntPtr getStartData(double _time, int _sumplayers)
+        {
+            starting.spawnid = spawnarea;
+            starting.sumplayer = (uint)_sumplayers;
+
+            Mrs.MRS_LOG_DEBUG("getStartData Spawn:{0} countPlayer:{1}", String.Join(", ", starting.spawnid), starting.sumplayer);
+
+            IntPtr data = Marshal.AllocHGlobal(Marshal.SizeOf(starting));
+            Marshal.StructureToPtr(starting, data, false);
+
+            return data;
+        }
+
         public int getStartDataSize()
         {
             return Marshal.SizeOf(starting);
@@ -221,5 +235,6 @@ namespace Game_Process
         //}
 
         public Int32 getWrapSize() { return DataSize; }
+
     }
 }

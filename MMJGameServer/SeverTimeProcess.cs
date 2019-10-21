@@ -79,7 +79,7 @@ namespace MMJGameServer {
 		/// <summary>
 		/// 現在時刻取得
 		/// </summary>
-		DateTime Now { get{ return DateTime.Now; } }
+		public DateTime Now { get{ return DateTime.Now; } }
 		//-------------------------------------------------------------------------------------------
 		/// <summary>
 		/// サーバー起動してからの経過時間取得
