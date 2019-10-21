@@ -188,6 +188,9 @@ namespace game_server
         /// </summary>
         private static Boolean g_gameon = false;
 
+        ServerTime serverTime;
+
+
         private static ushort g_payloadType;
 
 		/// <summary>
@@ -243,6 +246,7 @@ namespace game_server
 		{
 			try
 			{
+                serverTime = new ServerTime();
 				mrs_initialize();
 				mrs_set_ssl_certificate_data(s_SslCertificateData);
 				mrs_set_ssl_private_key_data(s_SslPrivateKeyData);

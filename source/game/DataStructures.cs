@@ -27,6 +27,7 @@ namespace DataStructures
         public uint id;
         public float x, y;
         public float angle;
+        public bool dead;
     }
 
     public struct S_DataShots
@@ -36,12 +37,23 @@ namespace DataStructures
         public int id;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct S_StartingData
     {
         [MarshalAs(UnmanagedType.ByValArray,SizeConst = 4)]
         public int[] spawnid;
+
         public uint sumplayer;
 
     }
 
+
+    // スタート時送信用構造体
+    public struct S_StartingPackage
+    {
+        [MarshalAs(UnmanagedType.LPStruct)]
+        public S_Header header;
+        [MarshalAs(UnmanagedType.LPStruct)]
+        public S_StartingData data;
+    }
 }
