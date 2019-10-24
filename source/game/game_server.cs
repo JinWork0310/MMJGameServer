@@ -195,6 +195,8 @@ namespace game_server
 
         private static ushort g_payloadType;
 
+        private static bool some1disconnected = false;
+
 		/// <summary>
 		/// コールバックの保存
 		/// </summary>
@@ -295,6 +297,13 @@ namespace game_server
                             //g_payloadType = 0x11;
                             //SendDataEveryone();
                         }
+                        else
+                        {
+                            if (some1disconnected)
+                            {
+                                SortPlayerList();
+                            }
+                        }
 
 						mrs_update();
 						mrs_sleep(m_SleepMsec);
@@ -387,12 +396,14 @@ namespace game_server
         /// <param name="connection_data"></param>
         private static void OnDisconnect(MrsConnection connection, IntPtr connection_data)
         {
+            some1disconnected = true;
+
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (connection == m_nowConnect[i])
                 {
-                    //MRS_LOG_DEBUG("OnDisconnect {0} : {1} local_mrs_version=0x{2:X} remote_mrs_version=0x{3:X}",
-                    //    ConnectionTypeToString(connection),m_nowConnect[i].ToInt32(), mrs_get_version(MRS_VERSION_KEY), mrs_connection_get_remote_version(connection, MRS_VERSION_KEY));
+                    MRS_LOG_DEBUG("OnDisconnect {0} : {1} local_mrs_version=0x{2:X} remote_mrs_version=0x{3:X}",
+                        ConnectionTypeToString(connection), m_nowConnect[i].ToInt32(), mrs_get_version(MRS_VERSION_KEY), mrs_connection_get_remote_version(connection, MRS_VERSION_KEY));
                     m_gameProc.eraseProfileData(i);
                     m_nowConnect[i] = IntPtr.Zero; 
 
@@ -410,13 +421,9 @@ namespace game_server
                 }
                 //MRS_LOG_DEBUG("now Connect No.{0} : {1}", i, m_nowConnect[i].ToInt32());
             }
-            SortPlayerList();
             nowplayers = mrs_get_connection_num();
-            for(int i = 0; i < m_MaxPlayer; i++)
-            {
-                sendCorrectProfile(i, m_gameProc.getProfileData(i));
-            }
-            if (nowplayers < 2) { g_gameon = false; m_gameProc.CloseGame(); }
+
+            if (nowplayers <= 2) { g_gameon = false; m_gameProc.CloseGame(); }
         }
 
 		/// <summary>
@@ -702,6 +709,13 @@ namespace game_server
         private static void SortPlayerList()
         {
             m_gameProc.sortPlayerList();
+
+            for (int i = 0; i < m_MaxPlayer; i++)
+            {
+                sendCorrectProfile(i, m_gameProc.getProfileData(i));
+            }
+
+            some1disconnected = false;
         }
 
 
