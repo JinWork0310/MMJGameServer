@@ -16,7 +16,7 @@ namespace game_server
 	/// <summary>
 	/// エコーサーバークラス
 	/// </summary>
-	class GameServer : Mrs, IDisposable
+	public class GameServer : Mrs, IDisposable
 	{
 		/// <summary>
 		/// 廃棄フラグ
@@ -189,7 +189,9 @@ namespace game_server
         private static Boolean g_gameon = false;
 
         ServerTime serverTime;
+        private static uint nowplayers = 0;
 
+        static int readybit;
 
         private static ushort g_payloadType;
 
@@ -207,6 +209,11 @@ namespace game_server
 		/// </summary>
 		public GameServer()
 		{
+            m_nowConnect = new MrsConnection[m_MaxPlayer];
+            for(int i = 0; i < m_MaxPlayer; i++)
+            {
+                m_nowConnect[i] = new MrsServer();
+            }
 		}
 
 		/// <summary>
@@ -251,8 +258,6 @@ namespace game_server
 				mrs_set_ssl_certificate_data(s_SslCertificateData);
 				mrs_set_ssl_private_key_data(s_SslPrivateKeyData);
 
-                m_nowConnect = new MrsConnection[m_MaxPlayer];
-                for(int i = 0; i< m_MaxPlayer; i++) { m_nowConnect[i] = new IntPtr(); }
 
 				using (var sig = new ExitSignal())
 				using (var tcp_server = new MrsServerFoundation(MrsConnectionType.TCP, m_ArgServerAddr, m_ServerPort, m_BackLog)) // TCP
@@ -287,9 +292,8 @@ namespace game_server
                         if (g_gameon)
                         {
                             m_gameProc.UpdateGame();
-                            //IntPtr sendPtr = m_gameProc.getDataForSend((int)m_MaxPlayer);
-                            //SendDataEveryone(sendPtr, m_gameProc.getWrapSize());
-                            //sendPtr = IntPtr.Zero;
+                            //g_payloadType = 0x11;
+                            //SendDataEveryone();
                         }
 
 						mrs_update();
@@ -351,7 +355,7 @@ namespace game_server
 		/// <param name="connection"></param>
 		private static void OnConnect(MrsConnection connection)
         {
-            if (g_gameon) { mrs_close(connection); return; }
+            if (g_gameon || nowplayers >= m_MaxPlayer) { mrs_close(connection); return; }
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (m_nowConnect[i].ToInt32() == 0)
@@ -359,9 +363,11 @@ namespace game_server
                     m_nowConnect[i] = connection;
                     MRS_LOG_DEBUG("OnConnect {0} : {1} local_mrs_version=0x{2:X} remote_mrs_version=0x{3:X}",
                         ConnectionTypeToString(connection), m_nowConnect[i].ToInt32(), mrs_get_version(MRS_VERSION_KEY), mrs_connection_get_remote_version(connection, MRS_VERSION_KEY));
-
+                    nowplayers = mrs_get_connection_num();
+                    MRS_LOG_DEBUG("now Connect No.{0} : {1}", i, m_nowConnect[i].ToInt32());
                     break;
                 }
+                MRS_LOG_DEBUG("now Connect No.{0} : {1}", i, m_nowConnect[i].ToInt32());
             }
             bool connectAll = true;
             for(int j = 0; j < m_MaxPlayer; j++)
@@ -381,18 +387,36 @@ namespace game_server
         /// <param name="connection_data"></param>
         private static void OnDisconnect(MrsConnection connection, IntPtr connection_data)
         {
-            int nowplayer = 0;
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (connection == m_nowConnect[i])
                 {
-                    MRS_LOG_DEBUG("OnDisconnect {0} : {1} local_mrs_version=0x{2:X} remote_mrs_version=0x{3:X}",
-                        ConnectionTypeToString(connection),m_nowConnect[i].ToInt32(), mrs_get_version(MRS_VERSION_KEY), mrs_connection_get_remote_version(connection, MRS_VERSION_KEY));
-                    m_nowConnect[i] = IntPtr.Zero;
+                    //MRS_LOG_DEBUG("OnDisconnect {0} : {1} local_mrs_version=0x{2:X} remote_mrs_version=0x{3:X}",
+                    //    ConnectionTypeToString(connection),m_nowConnect[i].ToInt32(), mrs_get_version(MRS_VERSION_KEY), mrs_connection_get_remote_version(connection, MRS_VERSION_KEY));
+                    m_gameProc.eraseProfileData(i);
+                    m_nowConnect[i] = IntPtr.Zero; 
+
                 }
-                if (m_nowConnect[i] != (IntPtr)0) nowplayer++;
+                if (m_nowConnect[i].ToInt32() == 0) {
+                    for (int j = i + 1; j < m_MaxPlayer; j++)
+                    {
+                        if (m_nowConnect[j].ToInt32() != 0)
+                        {
+                            m_nowConnect[i] = m_nowConnect[j];
+                            m_nowConnect[j] = IntPtr.Zero;
+                            break;
+                        }
+                    } 
+                }
+                //MRS_LOG_DEBUG("now Connect No.{0} : {1}", i, m_nowConnect[i].ToInt32());
             }
-            if (nowplayer < 2) { g_gameon = false; m_gameProc.CloseGame(); }
+            SortPlayerList();
+            nowplayers = mrs_get_connection_num();
+            for(int i = 0; i < m_MaxPlayer; i++)
+            {
+                sendCorrectProfile(i, m_gameProc.getProfileData(i));
+            }
+            if (nowplayers < 2) { g_gameon = false; m_gameProc.CloseGame(); }
         }
 
 		/// <summary>
@@ -452,15 +476,30 @@ namespace game_server
                 // MRS_PAYLOAD_TYPE_BEGIN - MRS_PAYLOAD_TYPE_ENDの範囲内で任意のIDを定義し、対応するアプリケーションコードを記述する
                 case 0x01:
                     {
-                        g_payloadType = 0x01;
+                        g_payloadType = 0x02;
                         int i = 0;
+
                         for (; i < m_MaxPlayer; i++)
                         {
-                            if (connection == m_nowConnect[i]) break;
+                            if (connection == m_nowConnect[i])
+                            {
+
+                                for (int j = 0; j < nowplayers; j++)
+                                {
+                                    if (i != j)
+                                    {
+                                        IntPtr p_Send = m_gameProc.getProfileData(j);
+                                        mrs_write_record(m_nowConnect[i], options, g_payloadType, p_Send, (uint)m_gameProc.getProfileSize(j));
+                                        MRS_LOG_DEBUG("SENT No.{0} Player to No.{1} Player's Data", i, j);
+                                    }
+                                }
+                                break;
+                            }
                         }
-                        
                         IntPtr p_data = m_gameProc.setProfile(_payload, i);
-                        for (int j = 0; j < m_MaxPlayer; j++)
+                        
+                        g_payloadType = 0x01;
+                        for (int j = 0; j < nowplayers; j++)
                         {
                             if (j == i)
                             {
@@ -473,24 +512,21 @@ namespace game_server
                                 mrs_write_record(m_nowConnect[j], options, g_payloadType, p_data, (uint)m_gameProc.getProfileSize(i));
                             }
                         }
-                        Marshal.FreeHGlobal(p_data);
                     }
                     break;
 
+                    // 0x03 ゲームスタート準備
                 case 0x03:
                     {
-                        int nowplayers = 0;
-                        for(int i = 0; i < m_MaxPlayer; i++)
-                        {
-                            if (m_nowConnect[i] != (IntPtr)0) nowplayers++;
-                        }
+                        nowplayers = mrs_get_connection_num();
                         g_payloadType = 0x03;
                         MRS_LOG_DEBUG("received 0x03 data");
                         // ゲーム処理初期化
                         m_gameProc.Initialize();
+                        readybit = 0;
 
                         // ゲームスタートに必要なデータの作成・送信
-                        IntPtr sendptr = m_gameProc.getStartData(nowplayers);
+                        IntPtr sendptr = m_gameProc.getStartData((int)nowplayers);
 
                         for(int i = 0; i < nowplayers; i++)
                         {
@@ -498,10 +534,72 @@ namespace game_server
                         }
                         MRS_LOG_DEBUG("sent start data");
                         Marshal.FreeHGlobal(sendptr);
-                        g_gameon = true;
                     }
                     break;
-                    
+
+                    // 0x04 クライアント達の初期位置設定待ち
+                case 0x04:
+                    {
+                        int i = 0;
+                        for (; i < m_MaxPlayer; i++)
+                        {
+                            if (connection == m_nowConnect[i]) break;
+                        }
+                        MRS_LOG_DEBUG("received 0x03 data from Player no.{0}",i);
+
+                        m_gameProc.setPlayerData(i, _payload);
+
+
+                        readybit += 1 << i;
+
+                        MRS_LOG_DEBUG("READY BIT : {0}", Convert.ToString(readybit, 2));
+
+                        int correctBit = 0;
+                        for (int j = 0; j < mrs_get_connection_num(); j++) { correctBit += 1 << j; }
+                        if(readybit == correctBit)
+                        {
+                            g_payloadType = 0x04;
+                            SendDataEveryone();
+                            MRS_LOG_DEBUG("EVERYONE READY!");
+
+                            g_gameon = true;
+                        }
+                    }
+                    break;
+
+                // 0x05 カウントダウン開始の告知
+                case 0x05:
+                    {
+                        for(int i = 0; i < nowplayers; i++)
+                        {
+                            if(m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, payload_type, _payload, payload_len);
+                        }
+                    }
+                    break;
+
+                // 0x06 カウントダウン時間の送受信
+                case 0x06:
+                    {
+                        for (int i = 0; i < nowplayers; i++)
+                        {
+                            if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, payload_type, _payload, payload_len);
+                        }
+                    }
+                    break;
+
+                // 0x07 ステージ番号の送受信
+                case 0x07:
+                    unsafe{
+                        int stageid = *(int*)_payload;
+                        m_gameProc.setStageId(stageid);
+
+                        for (int i = 0; i < nowplayers; i++)
+                        {
+                            if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, payload_type, _payload, payload_len);
+                        }
+                    }
+                    break;
+
                 // プレイヤーデータ送受信用PayloadType
                 case 0x12:
                     {
@@ -515,9 +613,9 @@ namespace game_server
 
                             m_gameProc.setPlayerData(i, _payload);
 
-                            for (int j = 0; j < m_MaxPlayer; j++)
+                            for (int j = 0; j < mrs_get_connection_num(); j++)
                             {
-                                if (j != i) mrs_write_record(m_nowConnect[j], options, payload_type, _payload, payload_len);
+                                if (j != i) if (m_nowConnect[j].ToInt32() == 0) mrs_write_record(m_nowConnect[j], options, payload_type, _payload, payload_len);
                             }
                         }
                     }
@@ -528,21 +626,53 @@ namespace game_server
                     {
                         if (g_gameon)
                         {
-                            int i = 0;
-                            for (; i < m_MaxPlayer; i++)
-                            {
-                                if (connection == m_nowConnect[i]) break;
-                            }
+                            IntPtr send = m_gameProc.setShotData(_payload);
 
-                            m_gameProc.setShotData(_payload);
-
-                            for (int j = 0; j < m_MaxPlayer; j++)
+                            for (int j = 0; j < nowplayers; j++)
                             {
-                                if (j != i) mrs_write_record(m_nowConnect[j], options, payload_type, _payload, payload_len);
+                                if (m_nowConnect[j].ToInt32() == 0) mrs_write_record(m_nowConnect[j], options, payload_type, _payload, payload_len);
                             }
                         }
                     }
                     break;
+
+                    // 床の落下の合図、全員に合図を送信
+                case 0x15:
+                    {
+                        MRS_LOG_DEBUG("RECIEVE 0x15  FALL FLOOR !!");
+                        for(int i = 0; i < nowplayers; i++)
+                        {
+                            if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, payload_type, _payload, payload_len);
+                        }
+                    }break;
+
+
+                //------------------------------------ 死亡判定系 0x2#
+
+                // 落下死
+                case 0x21:
+                    {
+                        MRS_LOG_DEBUG("RECIEVE SOMEONE FALLING !!");
+                        for (int i = 0; i < nowplayers; i++)
+                        {
+                            if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, payload_type, _payload, payload_len);
+                        }
+                    }
+                    break;
+
+                // 被弾死
+                case 0x22:
+                    {
+                        MRS_LOG_DEBUG("RECIEVE SOMEONE TAKING SHOT !!");
+
+                        IntPtr sendHit = m_gameProc.SomeoneDeadHit(_payload);
+                        for (int i = 0; i < nowplayers; i++)
+                        {
+                            if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, payload_type, sendHit, payload_len);
+                        }
+                    }
+                    break;
+
                 default:
                     break;
             }
@@ -552,16 +682,44 @@ namespace game_server
         /// ゲームデータの一括送信
         /// </summary>
         /// <param name="_ptr">データ構造体のポインタ</param>
-        public void SendDataEveryone(IntPtr _ptr, int _len)
+        public static void SendDataEveryone()
         {
-            for(int i = 0; i < m_MaxPlayer; i++)
+            IntPtr _ptr = m_gameProc.getDataForSend();
+            int _len = m_gameProc.getSendPackSize();
+
+            for (int i = 0; i < nowplayers; i++)
             {
-                if(m_nowConnect[i] != null)
+                if (m_nowConnect[i].ToInt32() != 0)
                 {
-                    mrs_write_record(m_nowConnect[i], 1, 0x11, _ptr, (uint)_len);
+                    mrs_write_record(m_nowConnect[i], 1, g_payloadType, _ptr, (uint)_len);
+                    //MRS_LOG_DEBUG("Send Everyone No.{0}", i);
+                }
+            }
+            Marshal.FreeHGlobal(_ptr);
+        }
+
+
+        private static void SortPlayerList()
+        {
+            m_gameProc.sortPlayerList();
+        }
+
+
+        public static void sendCorrectProfile(int _id, IntPtr _sendptr)
+        {
+            for (int i = 0; i < nowplayers; i++)
+            {
+                if(i == _id)
+                {
+                    if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], 0x01, 0x01, _sendptr, (uint)m_gameProc.getProfileSize(_id));
+                }
+                else
+                {
+                    if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], 0x01, 0x02, _sendptr, (uint)m_gameProc.getProfileSize(_id));
                 }
             }
         }
+
 	}// end GameServer class
 
 	/// <summary>
