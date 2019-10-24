@@ -147,6 +147,7 @@ namespace Game_Process
 
             shot[shotIndex].angle = getdata.angle;
             shot[shotIndex].bullet_id = shotIndex;
+            shot[shotIndex].whos_shot = getdata.whos_shot;
 
 
             IntPtr p_data = Marshal.AllocHGlobal(Marshal.SizeOf(shot[shotIndex]));
@@ -288,7 +289,7 @@ namespace Game_Process
 
             deadHit.whosby_id = (int)shot[deadHit.bullet_id].whos_shot;
 
-            Marshal.FreeCoTaskMem(_pay);
+            Console.WriteLine("Shot No.{0} Shot by No.{1} Player", deadHit.bullet_id, shot[deadHit.bullet_id].whos_shot);
 
             IntPtr send = Marshal.AllocCoTaskMem(Marshal.SizeOf(deadHit));
             Marshal.StructureToPtr(deadHit, send, false);

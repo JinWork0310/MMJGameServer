@@ -615,7 +615,7 @@ namespace game_server
 
                             for (int j = 0; j < mrs_get_connection_num(); j++)
                             {
-                                if (j != i) if (m_nowConnect[j].ToInt32() == 0) mrs_write_record(m_nowConnect[j], options, payload_type, _payload, payload_len);
+                                if (j != i) if (m_nowConnect[j].ToInt32() != 0) mrs_write_record(m_nowConnect[j], options, payload_type, _payload, payload_len);
                             }
                         }
                     }
@@ -630,7 +630,7 @@ namespace game_server
 
                             for (int j = 0; j < nowplayers; j++)
                             {
-                                if (m_nowConnect[j].ToInt32() == 0) mrs_write_record(m_nowConnect[j], options, payload_type, _payload, payload_len);
+                                if (m_nowConnect[j].ToInt32() != 0) mrs_write_record(m_nowConnect[j], options, payload_type, send, payload_len);
                             }
                         }
                     }
