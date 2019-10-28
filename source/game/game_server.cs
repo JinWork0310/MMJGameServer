@@ -23,10 +23,11 @@ namespace game_server
 		/// </summary>
 		private bool m_bDisposed = false;
 
-		/// <summary>
-		/// 公開キー
-		/// </summary>
-		private static readonly string s_SslCertificateData =
+        #region キーの設定
+        /// <summary>
+        /// 公開キー
+        /// </summary>
+        private static readonly string s_SslCertificateData =
 			"Certificate:\n" +
 			"    Data:\n" +
 			"        Version: 3 (0x2)\n" +
@@ -133,6 +134,8 @@ namespace game_server
 			"Md2qrDIp8KRceWB4YV9pjPOX\n" +
 			"-----END PRIVATE KEY-----\n";
 
+        #endregion
+
         /// <summary>
         /// 最大プレイヤー数
         /// </summary>
@@ -187,6 +190,7 @@ namespace game_server
         /// ゲーム稼働フラグ
         /// </summary>
         private static Boolean g_gameon = false;
+        private static Boolean g_isPlay = false;
 
         ServerTime serverTime;
         private static uint nowplayers = 0;
@@ -364,7 +368,7 @@ namespace game_server
 		/// <param name="connection"></param>
 		private static void OnConnect(MrsConnection connection)
         {
-            if (g_gameon || nowplayers >= m_MaxPlayer) { mrs_close(connection); return; }
+            if (g_isPlay || nowplayers >= m_MaxPlayer) { mrs_close(connection); return; }
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (m_nowConnect[i].ToInt32() == 0)
@@ -525,6 +529,7 @@ namespace game_server
                     // 0x03 ゲームスタート準備
                 case 0x03:
                     {
+                        g_isPlay = true;
                         nowplayers = mrs_get_connection_num();
                         g_payloadType = 0x03;
                         MRS_LOG_DEBUG("received 0x03 data");
@@ -552,7 +557,7 @@ namespace game_server
                         {
                             if (connection == m_nowConnect[i]) break;
                         }
-                        MRS_LOG_DEBUG("received 0x03 data from Player no.{0}",i);
+                        MRS_LOG_DEBUG("received 0x04 data from Player no.{0}",i);
 
                         m_gameProc.setPlayerData(i, _payload);
 
@@ -653,6 +658,16 @@ namespace game_server
                         }
                     }break;
 
+                    // 弾の反射情報
+                case 0x16:
+                    {
+                        MRS_LOG_DEBUG("RECIEVE 0x16  REFLEXION SHOT !!");
+                        for (int i = 0; i < nowplayers; i++)
+                        {
+                            if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, payload_type, _payload, payload_len);
+                        }
+                    }
+                    break;
 
                 //------------------------------------ 死亡判定系 0x2#
 
@@ -680,7 +695,14 @@ namespace game_server
                     }
                     break;
 
-                default:
+                //------------------------------------ シーン切り替え 0x3#
+                // リザルト表示中
+                case 0x31:
+                    {
+                        MRS_LOG_DEBUG("ON_RESULT");
+                        g_isPlay = false;
+                        g_gameon = false;
+                    }
                     break;
             }
         }
