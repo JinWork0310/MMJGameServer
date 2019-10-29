@@ -133,7 +133,7 @@ namespace Game_Process
             player[_num].angle = getdata.angle;
             player[_num].dead = getdata.dead;
             
-            Console.WriteLine("Successed PlayerNumber: {0} pos_x:{1} pos_y:{2} look:{3}",
+            //Console.WriteLine("Successed PlayerNumber: {0} pos_x:{1} pos_y:{2} look:{3}",
                 _num, player[_num].x, player[_num].y, player[_num].angle);
 
         }

@@ -481,7 +481,7 @@ namespace game_server
 		/// <param name="payload_len"></param>
 		private static void ParseRecord(MrsConnection connection, IntPtr connection_data, UInt32 seqnum, UInt16 options, UInt16 payload_type, IntPtr _payload, UInt32 payload_len)
 		{
-			MRS_LOG_DEBUG("ParseRecord seqnum=0x{0:X} options=0x{1:X} payload type={2:X} payload len={3}", seqnum, options, payload_type, payload_len);
+			//MRS_LOG_DEBUG("ParseRecord seqnum=0x{0:X} options=0x{1:X} payload type={2:X} payload len={3}", seqnum, options, payload_type, payload_len);
             switch (payload_type)
             {
                 // MRS_PAYLOAD_TYPE_BEGIN - MRS_PAYLOAD_TYPE_ENDの範囲内で任意のIDを定義し、対応するアプリケーションコードを記述する
