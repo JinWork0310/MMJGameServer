@@ -707,6 +707,7 @@ namespace game_server
                     {
                         MRS_LOG_DEBUG("ON_RESULT");
                         g_gameon = false;
+						m_gameProc.setStageId(1);
                     }
                     break;
 
@@ -722,12 +723,13 @@ namespace game_server
 					}
 					break;
 
-				// ルームに戻る選択を受信
+				// タイトルに戻る選択を受信
 				case 0x33: {
 						MRS_LOG_DEBUG("BACK_TITLE");
 						for (int i = 0; i < nowplayers; i++) {
 							if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, 0x33, null, 0);
 						}
+						g_isPlay = false;
 					}
 					break;
 
