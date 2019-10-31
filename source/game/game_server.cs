@@ -192,6 +192,9 @@ namespace game_server
         private static Boolean g_gameon = false;
         private static Boolean g_isPlay = false;
 
+		private static Boolean g_isResult = false;
+		private static Boolean g_isRoom = false;
+
         ServerTime serverTime;
         private static uint nowplayers = 0;
 
@@ -369,6 +372,7 @@ namespace game_server
 		private static void OnConnect(MrsConnection connection)
         {
             if (g_isPlay || nowplayers >= m_MaxPlayer) { mrs_close(connection); return; }
+			g_isRoom = true;
             for (int i = 0; i < m_MaxPlayer; i++)
             {
                 if (m_nowConnect[i].ToInt32() == 0)
@@ -537,6 +541,8 @@ namespace game_server
                         m_gameProc.Initialize();
                         readybit = 0;
 
+						g_isRoom = false;
+
                         // ゲームスタートに必要なデータの作成・送信
                         IntPtr sendptr = m_gameProc.getStartData((int)nowplayers);
 
@@ -700,12 +706,33 @@ namespace game_server
                 case 0x31:
                     {
                         MRS_LOG_DEBUG("ON_RESULT");
-                        g_isPlay = false;
                         g_gameon = false;
                     }
                     break;
-            }
-        }
+
+				// ルームに戻る選択を受信
+				case 0x32:
+					{
+						MRS_LOG_DEBUG("BACK_ROOM");
+						for (int i = 0; i < nowplayers; i++) {
+							if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, 0x32, null, 0);
+						}
+						g_isRoom = true;
+						g_isPlay = false;
+					}
+					break;
+
+				// ルームに戻る選択を受信
+				case 0x33: {
+						MRS_LOG_DEBUG("BACK_TITLE");
+						for (int i = 0; i < nowplayers; i++) {
+							if (m_nowConnect[i].ToInt32() != 0) mrs_write_record(m_nowConnect[i], options, 0x33, null, 0);
+						}
+					}
+					break;
+
+			}
+		}
 
         /// <summary>
         /// ゲームデータの一括送信
